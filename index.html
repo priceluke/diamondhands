@@ -11,26 +11,11 @@
     </style>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.stock.min.js"></script>
-
+    <script type="text/javascript" src="historical.js"></script>
     <script type="text/javascript">
-        function loadJSON(callback) {
 
-            var xobj = new XMLHttpRequest();
-            xobj.overrideMimeType("application/json");
-            xobj.open('GET', 'historical.json', true); // Replace 'my_data' with the path to your file
-            xobj.onreadystatechange = function () {
-                if (xobj.readyState == 4 && xobj.status == "200") {
-                    // Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
-                    callback(xobj.responseText);
-                }
-            };
-            xobj.send(null);
-        }
-        var historical_json;
-            loadJSON(function(response) {
-            // Parse JSON string into object
-                historical_json = JSON.parse(response);
-        });
+
+        historical_json = JSON.parse(historical_json);
 
         window.onload = function () {
             var dataPoints = [], currentDate = new Date(), rangeChangedTriggered = false;
