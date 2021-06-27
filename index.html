@@ -1,0 +1,175 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <style>
+    p {
+        font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', sans-serif;
+
+
+    }
+    </style>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.stock.min.js"></script>
+
+    <script type="text/javascript">
+        function loadJSON(callback) {
+
+            var xobj = new XMLHttpRequest();
+            xobj.overrideMimeType("application/json");
+            xobj.open('GET', 'historical.json', true); // Replace 'my_data' with the path to your file
+            xobj.onreadystatechange = function () {
+                if (xobj.readyState == 4 && xobj.status == "200") {
+                    // Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
+                    callback(xobj.responseText);
+                }
+            };
+            xobj.send(null);
+        }
+        var historical_json;
+            loadJSON(function(response) {
+            // Parse JSON string into object
+                historical_json = JSON.parse(response);
+        });
+
+        window.onload = function () {
+            var dataPoints = [], currentDate = new Date(), rangeChangedTriggered = false;
+            var stockChart = new CanvasJS.StockChart("chartContainer",{
+                theme: "dark1", //"light2", "dark1", "dark2"
+                title:{
+                    text:"Diamond Hand Training Simulation"
+                },
+                rangeChanged: function(e) {
+                    rangeChangedTriggered = true;
+                },
+                charts: [{
+                    axisX: {
+                        crosshair: {
+                            enabled: true,
+                            valueFormatString: "MMM DD, YYYY HH:mm:ss"
+                        }
+                    },
+                    axisY: {
+                        title: "Price Per Share"
+                    },
+                    toolTip: {
+                        shared: true
+                    },
+                    data: [{
+                        type: "line",
+                        name: "Price Per Share",
+                        xValueFormatString: "MMM DD, YYYY HH:mm:ss",
+                        xValueType: "dateTime",
+                        dataPoints : dataPoints
+                    }]
+                }],
+                navigator: {
+                    slider: {
+                        minimum: new Date(currentDate.getTime() - (90 * 1000))
+                    },
+                    axisX: {
+                        labelFontColor: "white"
+                    }
+                },
+                rangeSelector: {
+                    enabled: false
+                }
+            });
+            function compare( a, b ) {
+                if ( new Date(a.Date).getTime() < new Date(b.Date).getTime()){
+                    return -1;
+                }
+                if ( new Date(a.Date).getTime() > new Date(b.Date).getTime() ){
+                    return 1;
+                }
+                return 0;
+            }
+
+            historical_json.sort( compare );
+            var dataCount = historical_json.length, ystart = 50, interval =  24*60*60*1000, xstart = (currentDate.getTime() - (700 * 1000));
+            loadChart(xstart, ystart, dataCount, interval);
+            function loadChart(xstart, ystart, length, interval) {
+                var xVal = xstart, yVal = ystart;
+                for(var i = 0; i < length; i++) {
+                    yVal = historical_json[i].Close;
+                    xVal = new Date(historical_json[i].Date).getTime();
+                    dataPoints.push({x: xVal,y: yVal});
+                    xVal += interval;
+                }
+                if(!rangeChangedTriggered) {
+                    stockChart.options.navigator.slider.minimum = new Date(xVal - (90 * 1000)) ;
+                }
+                xstart = xVal;
+                dataCount = 1;
+                ystart = yVal;
+                stockChart.render();
+            }
+
+            updateChart(new Date(historical_json[historical_json.length-1].Date).getTime(), historical_json[historical_json.length-1].Close, 1, interval);
+            function updateChart(xstart, ystart, length, interval) {
+                var formatter = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+
+                    // These options are needed to round to whole numbers if that's what you want.
+                    //minimumFractionDigits: 0, // (this suffices for whole numbers, but will print 2500.10 as $2,500.1)
+                    //maximumFractionDigits: 0, // (causes 2500.99 to be printed as $2,501)
+                });
+                var xVal = xstart, yVal = ystart;
+                for(var i = 0; i < length; i++) {
+                    yVal = yVal *  1.05;
+                    dataPoints.push({x: xVal,y: yVal});
+                    xVal += interval;
+                }
+                if(!rangeChangedTriggered) {
+                    stockChart.options.navigator.slider.minimum = new Date(xVal - (90 * 1000)) ;
+                }
+                xstart = xVal;
+                dataCount = 1;
+                ystart = yVal;
+                stockChart.render();
+                document.getElementById('price').innerText = formatter.format(yVal.toFixed(2));
+                var d = new Date(xVal);
+                document.getElementById('date').innerText = d.toLocaleDateString("en-US");
+                function floor() {
+                    now = new Date();
+                    countTo = new Date("Sat Mar 27 2021 00:00:00 GMT+0000 (Greenwich Mean Time)");
+                    milliseconds = Math.abs(countTo - now) * 0.0027 + 10000000;
+                    hours = milliseconds / 36e5;
+                    return milliseconds
+                }
+                if (yVal.toFixed(2) > floor()) {
+                    document.getElementById('paper').hidden = true;
+                    document.getElementById('diamond').hidden = false;
+
+                }
+                setTimeout(function() { updateChart(xstart, ystart, dataCount, interval); }, 500);
+            }
+        }
+    </script>
+</head>
+<body style="background-color:#2A2A2A;">
+<div id="chartContainer" class="mt-2" style="height: 450px; width: 100%;"></div>
+<table class=" text-center mt-4 table table-dark">
+    <tbody>
+    <tr>
+        <td>Price</td>
+        <td id="price">$456</td>
+    </tr>
+    <tr>
+        <td>Date</td>
+        <td id="date">Today, King</td>
+    </tr>
+    <tr>
+        <td colspan="2"><form id="paper"  action="https://bfy.tw/RBDa">
+            <input class="btn btn-danger" type="submit" value="Sell" />
+        </form>
+            <form id="diamond" hidden action="https://configurator.lamborghini.com/configurator/?lang=eng&country=gb">
+            <input class="btn btn-success" type="submit" value="Sell" />
+        </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
